@@ -9,13 +9,13 @@ fn push_back_and_front() {
     list.push_back(1);
     list.push_back(2);
 
-    // assert_eq!(
-    //     list,
-    //     LinkedList::Elem(
-    //         1,
-    //         Box::new(LinkedList::Elem(2, Box::new(LinkedList::Empty)))
-    //     )
-    // );
+    assert_eq!(
+        list,
+        LinkedList::Elem(
+            1,
+            Box::new(LinkedList::Elem(2, Box::new(LinkedList::Empty)))
+        )
+    );
 
     for i in 1..3 {
         list.push_front(i);
@@ -43,6 +43,11 @@ fn find() {
 #[test]
 fn pop_back() {
     let mut list = LinkedList::new();
+    list.push_back(1);
+
+    assert_eq!(list.pop_back(), Some(1));
+    assert_eq!(list, LinkedList::Empty);
+
     list.push_back(1);
     list.push_back(2);
     list.push_back(3);

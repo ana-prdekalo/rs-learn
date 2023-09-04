@@ -3,7 +3,7 @@ use std::{
     mem,
 };
 
-#[derive(PartialEq, Eq, Default, Clone)]
+#[derive(PartialEq, Eq, Default)]
 pub enum LinkedList {
     #[default]
     Empty,
@@ -100,14 +100,14 @@ impl LinkedList {
     }
 
     pub fn find(&self, item: usize) -> Option<usize> {
-        let mut idx = -1isize;
+        let mut idx = 0;
         let mut head = self;
 
         while let LinkedList::Elem(v, next) = head {
-            idx += 1;
             if *v == item {
-                return Some(idx as usize);
+                return Some(idx);
             }
+            idx += 1;
             head = next;
         }
 
