@@ -3,7 +3,7 @@ use std::{
     mem,
 };
 
-#[derive(PartialEq, Eq, Default)]
+#[derive(PartialEq, Default)]
 pub enum LinkedList {
     #[default]
     Empty,
