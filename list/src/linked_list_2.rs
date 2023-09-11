@@ -3,7 +3,7 @@ pub struct LinkedList {
     head: Option<Box<Node>>,
 }
 
-pub struct Node {
+struct Node {
     data: usize,
     next: Option<Box<Node>>,
 }
@@ -127,11 +127,11 @@ impl LinkedList {
 }
 
 impl Node {
-    pub fn new(data: usize) -> Self {
+    fn new(data: usize) -> Self {
         Node { data, next: None }
     }
 
-    pub fn new_boxed(data: usize, next: Option<Box<Node>>) -> Option<Box<Node>> {
+    fn new_boxed(data: usize, next: Option<Box<Node>>) -> Option<Box<Node>> {
         match &next {
             Some(_) => Some(Box::new(Node { data, next })),
             None => Some(Box::new(Node::new(data))),
