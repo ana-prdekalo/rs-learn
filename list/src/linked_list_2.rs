@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 #[derive(Default)]
 pub struct LinkedList {
     head: Option<Box<Node>>,
