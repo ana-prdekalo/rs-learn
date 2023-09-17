@@ -1,14 +1,14 @@
 #[derive(Default)]
-pub struct LinkedList {
-    head: Option<Box<Node>>,
+pub struct LinkedList<T> {
+    head: Option<Box<Node<T>>>,
 }
 
-struct Node {
-    data: usize,
-    next: Option<Box<Node>>,
+struct Node<T> {
+    data: T,
+    next: Option<Box<Node<T>>>,
 }
 
-impl LinkedList {
+impl<T> LinkedList<T> {
     pub fn new() -> Self {
         LinkedList { head: None }
     }
@@ -33,7 +33,7 @@ impl LinkedList {
         count
     }
 
-    pub fn push_back(&mut self, data: usize) {
+    pub fn push_back(&mut self, data: T) {
         let mut current = &mut self.head;
         while let Some(node) = current {
             current = &mut node.next;
@@ -41,7 +41,7 @@ impl LinkedList {
         *current = Node::new_boxed(data, None)
     }
 
-    pub fn push_front(&mut self, data: usize) {
+    pub fn push_front(&mut self, data: T) {
         if self.is_empty() {
             self.head = Node::new_boxed(data, None);
             return;
@@ -50,7 +50,7 @@ impl LinkedList {
         self.head = Node::new_boxed(data, self.head.take());
     }
 
-    pub fn pop_back(&mut self) -> Option<usize> {
+    pub fn pop_back(&mut self) -> Option<T> {
         if self.is_empty() {
             return None;
         }
@@ -74,14 +74,17 @@ impl LinkedList {
         unreachable!()
     }
 
-    pub fn pop_front(&mut self) -> Option<usize> {
+    pub fn pop_front(&mut self) -> Option<T> {
         self.head.take().map(|node| {
             self.head = node.next;
             node.data
         })
     }
 
-    pub fn first_index_of(&self, data: usize) -> Option<usize> {
+    pub fn first_index_of(&self, data: T) -> Option<usize>
+    where
+        T: PartialEq,
+    {
         let mut current = &self.head;
         let mut index = 0;
 
@@ -101,7 +104,7 @@ impl LinkedList {
     /// If index >= list.len(), inserts at the end of the list
     /// NOTE: this could've been implemented so that it returns result ic case index >= list.len()
     /// But I didn't want to complicate API
-    pub fn insert_at(&mut self, index: usize, data: usize) {
+    pub fn insert_at(&mut self, index: usize, data: T) {
         if index == 0 {
             self.push_front(data);
             return;
@@ -126,12 +129,12 @@ impl LinkedList {
     }
 }
 
-impl Node {
-    fn new(data: usize) -> Self {
+impl<T> Node<T> {
+    fn new(data: T) -> Self {
         Node { data, next: None }
     }
 
-    fn new_boxed(data: usize, next: Option<Box<Node>>) -> Option<Box<Node>> {
+    fn new_boxed(data: T, next: Option<Box<Node<T>>>) -> Option<Box<Node<T>>> {
         match &next {
             Some(_) => Some(Box::new(Node { data, next })),
             None => Some(Box::new(Node::new(data))),
@@ -253,5 +256,41 @@ mod test {
         list.insert_at(5, 1);
         assert_eq!(list.len(), 1);
         assert_eq!(list.pop_back(), Some(1));
+    }
+
+    #[test]
+    fn push_str() {
+        let mut list = LinkedList::new();
+        list.push_back("a");
+        list.push_back("b");
+        list.push_back("c");
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_back(), Some("c"));
+        assert_eq!(list.pop_back(), Some("b"));
+        assert_eq!(list.pop_back(), Some("a"));
+        assert_eq!(list.len(), 0);
+    }
+
+    #[test]
+    fn push_point() {
+        #[derive(Debug, PartialEq)]
+        struct Point {
+            x: i32,
+            y: i32,
+        }
+
+        let mut list = LinkedList::new();
+        list.push_back(Point { x: 1, y: 2 });
+        list.push_back(Point { x: 2, y: 3 });
+        list.push_back(Point { x: 3, y: 4 });
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_back(), Some(Point { x: 3, y: 4 }));
+        assert_eq!(list.len(), 2);
+
+        let index_of = list.first_index_of(Point { x: 2, y: 3 });
+        assert_eq!(index_of, Some(1));
+
+        let index_of = list.first_index_of(Point { x: 3, y: 4 });
+        assert_eq!(index_of, None);
     }
 }
