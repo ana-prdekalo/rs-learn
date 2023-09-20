@@ -186,7 +186,7 @@ impl<T> LinkedList<T> {
 
     pub fn iter(&self) -> LinkedListIter<T> {
         LinkedListIter {
-            current: &self.head,
+            current: self.head.as_deref(),
         }
     }
 
@@ -214,19 +214,16 @@ impl<T> Iterator for LinkedListIntoIter<T> {
 }
 
 pub struct LinkedListIter<'a, T> {
-    current: &'a Option<Box<Node<T>>>,
+    current: Option<&'a Node<T>>,
 }
 
 impl<'a, T> Iterator for LinkedListIter<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
-        match self.current {
-            None => None,
-            Some(node) => {
-                self.current = &node.next;
-                Some(&node.data)
-            }
-        }
+        self.current.map(|n| {
+            self.current = n.next.as_deref();
+            &n.data
+        })
     }
 }
 
