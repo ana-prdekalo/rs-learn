@@ -124,8 +124,7 @@ impl<T> LinkedList<T> {
             }
         }
 
-        //unwrap is ok, because, above in case None we have early return
-        let current = current.as_mut().unwrap();
+        let current = current.as_mut().expect("None case already handled");
         let new_node = Node::new_boxed(data, current.next.take());
         current.next = new_node;
     }
@@ -164,6 +163,29 @@ impl<T> LinkedList<T> {
         };
 
         Ok((self, second_list))
+    }
+
+    pub fn merge(&mut self, other: Self) {
+        match (&self.head, &other.head) {
+            (None, None) => return,
+            (Some(_), None) => return,
+            (None, Some(_)) => {
+                self.head = other.head;
+                return;
+            }
+            (_, _) => {}
+        }
+
+        let mut current = self
+            .head
+            .as_mut()
+            .expect("None case already handled, this cannot be None");
+
+        while let Some(ref mut node_next) = current.next {
+            current = node_next;
+        }
+
+        current.next = other.head;
     }
 }
 
@@ -386,5 +408,50 @@ mod test {
         list.push_back(4);
         let r = list.split_at(4);
         assert!(r.is_err())
+    }
+
+    #[test]
+    fn merge() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut list2 = LinkedList::new();
+        list2.push_back(4);
+        list2.push_back(5);
+        list2.push_back(6);
+        list.merge(list2);
+        assert_eq!(list.len(), 6);
+        assert_eq!(list.pop_back(), Some(6));
+        assert_eq!(list.pop_back(), Some(5));
+        assert_eq!(list.pop_back(), Some(4));
+        assert_eq!(list.pop_back(), Some(3));
+        assert_eq!(list.pop_back(), Some(2));
+        assert_eq!(list.pop_back(), Some(1));
+
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let list2 = LinkedList::new();
+        list.merge(list2);
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_front(), Some(1));
+
+        let mut list = LinkedList::new();
+        let mut list2 = LinkedList::new();
+        list2.push_back(4);
+        list2.push_back(5);
+        list2.push_back(6);
+        list.merge(list2);
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_back(), Some(6));
+
+        let mut list: LinkedList<()> = LinkedList::new();
+        let list2 = LinkedList::new();
+        list.merge(list2);
+        assert_eq!(list.len(), 0);
+        assert_eq!(list.pop_back(), None);
+        assert_eq!(list.pop_front(), None);
     }
 }
