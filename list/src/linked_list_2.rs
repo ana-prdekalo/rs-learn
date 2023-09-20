@@ -187,6 +187,10 @@ impl<T> LinkedList<T> {
 
         current.next = other.head;
     }
+
+    pub fn into_iter(self) -> LinkedListIntoIter<T> {
+        LinkedListIntoIter(self)
+    }
 }
 
 impl<T> Node<T> {
@@ -199,6 +203,15 @@ impl<T> Node<T> {
             Some(_) => Some(Box::new(Node { data, next })),
             None => Some(Box::new(Node::new(data))),
         }
+    }
+}
+
+pub struct LinkedListIntoIter<T>(LinkedList<T>);
+
+impl<T> Iterator for LinkedListIntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop_front()
     }
 }
 
@@ -453,5 +466,18 @@ mod test {
         assert_eq!(list.len(), 0);
         assert_eq!(list.pop_back(), None);
         assert_eq!(list.pop_front(), None);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut iter = list.into_iter();
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next(), None);
     }
 }
