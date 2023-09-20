@@ -10,7 +10,7 @@ struct Node<T> {
     next: Option<Box<Node<T>>>,
 }
 
-impl<'a, T> LinkedList<T> {
+impl<T> LinkedList<T> {
     pub fn new() -> Self {
         LinkedList { head: None }
     }
@@ -184,7 +184,7 @@ impl<'a, T> LinkedList<T> {
         current.next = other.head;
     }
 
-    pub fn iter(&'a self) -> LinkedListIter<'a, T> {
+    pub fn iter(&self) -> LinkedListIter<T> {
         LinkedListIter {
             current: &self.head,
         }
