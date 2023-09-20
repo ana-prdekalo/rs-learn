@@ -189,8 +189,13 @@ impl<T> LinkedList<T> {
             current: &self.head,
         }
     }
-}
 
+    pub fn iter_mut(&mut self) -> LinkedListIterMut<T> {
+        LinkedListIterMut {
+            current: self.head.as_mut(),
+        }
+    }
+}
 impl<T> IntoIterator for LinkedList<T> {
     type Item = T;
     type IntoIter = LinkedListIntoIter<T>;
@@ -199,16 +204,12 @@ impl<T> IntoIterator for LinkedList<T> {
     }
 }
 
-impl<T> Node<T> {
-    fn new(data: T) -> Self {
-        Node { data, next: None }
-    }
+pub struct LinkedListIntoIter<T>(LinkedList<T>);
 
-    fn new_boxed(data: T, next: Option<Box<Node<T>>>) -> Option<Box<Node<T>>> {
-        match &next {
-            Some(_) => Some(Box::new(Node { data, next })),
-            None => Some(Box::new(Node::new(data))),
-        }
+impl<T> Iterator for LinkedListIntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop_front()
     }
 }
 
@@ -229,12 +230,30 @@ impl<'a, T> Iterator for LinkedListIter<'a, T> {
     }
 }
 
-pub struct LinkedListIntoIter<T>(LinkedList<T>);
+pub struct LinkedListIterMut<'a, T> {
+    current: Option<&'a mut Box<Node<T>>>,
+}
 
-impl<T> Iterator for LinkedListIntoIter<T> {
-    type Item = T;
+impl<'a, T> Iterator for LinkedListIterMut<'a, T> {
+    type Item = &'a mut T;
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.pop_front()
+        self.current.take().map(|n| {
+            self.current = n.next.as_mut();
+            &mut n.data
+        })
+    }
+}
+
+impl<T> Node<T> {
+    fn new(data: T) -> Self {
+        Node { data, next: None }
+    }
+
+    fn new_boxed(data: T, next: Option<Box<Node<T>>>) -> Option<Box<Node<T>>> {
+        match &next {
+            Some(_) => Some(Box::new(Node { data, next })),
+            None => Some(Box::new(Node::new(data))),
+        }
     }
 }
 
@@ -515,5 +534,26 @@ mod test {
         assert_eq!(iter.next(), Some(&2));
         assert_eq!(iter.next(), Some(&3));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut iter = list.iter_mut();
+        assert_eq!(iter.next(), Some(&mut 1));
+        assert_eq!(iter.next(), Some(&mut 2));
+        assert_eq!(iter.next(), Some(&mut 3));
+        assert_eq!(iter.next(), None);
+
+        let mut iter = list.iter_mut();
+        assert_eq!(iter.next(), Some(&mut 1));
+        *iter.next().unwrap() = 4;
+
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&4));
     }
 }
