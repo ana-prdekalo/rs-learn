@@ -10,7 +10,7 @@ struct Node<T> {
     next: Option<Box<Node<T>>>,
 }
 
-impl<T> LinkedList<T> {
+impl<'a, T> LinkedList<T> {
     pub fn new() -> Self {
         LinkedList { head: None }
     }
@@ -23,15 +23,11 @@ impl<T> LinkedList<T> {
         self.head.as_ref().is_some_and(|n| n.next.is_none())
     }
 
-    //TODO: improve after implementing iterator
     pub fn len(&self) -> usize {
         let mut count = 0;
-        let mut current = &self.head;
-        while let Some(node) = current {
+        for _ in self.iter() {
             count += 1;
-            current = &node.next;
         }
-
         count
     }
 
@@ -191,6 +187,12 @@ impl<T> LinkedList<T> {
     pub fn into_iter(self) -> LinkedListIntoIter<T> {
         LinkedListIntoIter(self)
     }
+
+    pub fn iter(&'a self) -> LinkedListIter<'a, T> {
+        LinkedListIter {
+            current: &self.head,
+        }
+    }
 }
 
 impl<T> Node<T> {
@@ -202,6 +204,23 @@ impl<T> Node<T> {
         match &next {
             Some(_) => Some(Box::new(Node { data, next })),
             None => Some(Box::new(Node::new(data))),
+        }
+    }
+}
+
+pub struct LinkedListIter<'a, T> {
+    current: &'a Option<Box<Node<T>>>,
+}
+
+impl<'a, T> Iterator for LinkedListIter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.current {
+            None => None,
+            Some(node) => {
+                self.current = &node.next;
+                Some(&node.data)
+            }
         }
     }
 }
@@ -478,6 +497,19 @@ mod test {
         assert_eq!(iter.next(), Some(1));
         assert_eq!(iter.next(), Some(2));
         assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
         assert_eq!(iter.next(), None);
     }
 }
