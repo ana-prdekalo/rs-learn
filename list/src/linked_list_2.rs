@@ -184,14 +184,18 @@ impl<'a, T> LinkedList<T> {
         current.next = other.head;
     }
 
-    pub fn into_iter(self) -> LinkedListIntoIter<T> {
-        LinkedListIntoIter(self)
-    }
-
     pub fn iter(&'a self) -> LinkedListIter<'a, T> {
         LinkedListIter {
             current: &self.head,
         }
+    }
+}
+
+impl<T> IntoIterator for LinkedList<T> {
+    type Item = T;
+    type IntoIter = LinkedListIntoIter<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        LinkedListIntoIter(self)
     }
 }
 
