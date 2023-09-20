@@ -1,3 +1,5 @@
+use anyhow::{bail, Result};
+
 #[derive(Default)]
 pub struct LinkedList<T> {
     head: Option<Box<Node<T>>>,
@@ -122,10 +124,68 @@ impl<T> LinkedList<T> {
             }
         }
 
-        //unwrap is ok, because, above in case None we have early return
-        let current = current.as_mut().unwrap();
+        let current = current.as_mut().expect("None case already handled");
         let new_node = Node::new_boxed(data, current.next.take());
         current.next = new_node;
+    }
+
+    pub fn split_at(mut self, index: usize) -> Result<(LinkedList<T>, LinkedList<T>)> {
+        if index >= self.len() {
+            bail!("Index out of bounds");
+        }
+
+        // edge cases
+        if self.is_empty() {
+            return Ok((Self::new(), Self::new()));
+        }
+
+        if self.has_exactly_one_element() {
+            return Ok((self, Self::new()));
+        }
+
+        let split_at_last_element = index == self.len() - 1; // because we have 0 based index
+        if split_at_last_element {
+            return Ok((self, Self::new()));
+        }
+
+        let mut current = &mut self.head;
+        for _ in 0..index {
+            if let Some(node) = current {
+                current = &mut node.next;
+            }
+        }
+
+        let split_node = current.as_mut().expect(
+            "Current here must exist, as case of splitting at last element was already handled",
+        );
+        let second_list = Self {
+            head: split_node.next.take(),
+        };
+
+        Ok((self, second_list))
+    }
+
+    pub fn merge(&mut self, other: Self) {
+        match (&self.head, &other.head) {
+            (None, None) => return,
+            (Some(_), None) => return,
+            (None, Some(_)) => {
+                self.head = other.head;
+                return;
+            }
+            (_, _) => {}
+        }
+
+        let mut current = self
+            .head
+            .as_mut()
+            .expect("None case already handled, this cannot be None");
+
+        while let Some(ref mut node_next) = current.next {
+            current = node_next;
+        }
+
+        current.next = other.head;
     }
 }
 
@@ -292,5 +352,106 @@ mod test {
 
         let index_of = list.first_index_of(Point { x: 3, y: 4 });
         assert_eq!(index_of, None);
+    }
+
+    #[test]
+    fn split_at() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        let (mut first, mut second) = list.split_at(0).unwrap();
+        assert_eq!(first.len(), 1);
+        assert_eq!(second.len(), 3);
+        assert_eq!(first.pop_back(), Some(1));
+        assert_eq!(second.pop_front(), Some(2));
+        assert_eq!(second.pop_back(), Some(4));
+
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        let (mut first, mut second) = list.split_at(1).unwrap();
+        assert_eq!(first.len(), 2);
+        assert_eq!(second.len(), 2);
+        assert_eq!(first.pop_back(), Some(2));
+        assert_eq!(second.pop_front(), Some(3));
+
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        let (mut first, mut second) = list.split_at(2).unwrap();
+        assert_eq!(first.len(), 3);
+        assert_eq!(second.len(), 1);
+        assert_eq!(first.pop_back(), Some(3));
+        assert_eq!(second.pop_front(), Some(4));
+
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        let (mut first, mut second) = list.split_at(3).unwrap();
+        assert_eq!(first.len(), 4);
+        assert_eq!(second.len(), 0);
+        assert_eq!(first.pop_back(), Some(4));
+        assert_eq!(second.pop_back(), None);
+
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        let r = list.split_at(4);
+        assert!(r.is_err())
+    }
+
+    #[test]
+    fn merge() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut list2 = LinkedList::new();
+        list2.push_back(4);
+        list2.push_back(5);
+        list2.push_back(6);
+        list.merge(list2);
+        assert_eq!(list.len(), 6);
+        assert_eq!(list.pop_back(), Some(6));
+        assert_eq!(list.pop_back(), Some(5));
+        assert_eq!(list.pop_back(), Some(4));
+        assert_eq!(list.pop_back(), Some(3));
+        assert_eq!(list.pop_back(), Some(2));
+        assert_eq!(list.pop_back(), Some(1));
+
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let list2 = LinkedList::new();
+        list.merge(list2);
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_front(), Some(1));
+
+        let mut list = LinkedList::new();
+        let mut list2 = LinkedList::new();
+        list2.push_back(4);
+        list2.push_back(5);
+        list2.push_back(6);
+        list.merge(list2);
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_back(), Some(6));
+
+        let mut list: LinkedList<()> = LinkedList::new();
+        let list2 = LinkedList::new();
+        list.merge(list2);
+        assert_eq!(list.len(), 0);
+        assert_eq!(list.pop_back(), None);
+        assert_eq!(list.pop_front(), None);
     }
 }
