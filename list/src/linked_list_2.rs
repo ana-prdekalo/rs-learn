@@ -23,15 +23,11 @@ impl<T> LinkedList<T> {
         self.head.as_ref().is_some_and(|n| n.next.is_none())
     }
 
-    //TODO: improve after implementing iterator
     pub fn len(&self) -> usize {
         let mut count = 0;
-        let mut current = &self.head;
-        while let Some(node) = current {
+        for _ in self.iter() {
             count += 1;
-            current = &node.next;
         }
-
         count
     }
 
@@ -186,6 +182,62 @@ impl<T> LinkedList<T> {
         }
 
         current.next = other.head;
+    }
+
+    pub fn iter(&self) -> LinkedListIter<T> {
+        LinkedListIter {
+            current: self.head.as_deref(),
+        }
+    }
+
+    pub fn iter_mut(&mut self) -> LinkedListIterMut<T> {
+        LinkedListIterMut {
+            current: self.head.as_mut(),
+        }
+    }
+}
+impl<T> IntoIterator for LinkedList<T> {
+    type Item = T;
+    type IntoIter = LinkedListIntoIter<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        LinkedListIntoIter(self)
+    }
+}
+
+pub struct LinkedListIntoIter<T>(LinkedList<T>);
+
+impl<T> Iterator for LinkedListIntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop_front()
+    }
+}
+
+pub struct LinkedListIter<'a, T> {
+    current: Option<&'a Node<T>>,
+}
+
+impl<'a, T> Iterator for LinkedListIter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current.map(|n| {
+            self.current = n.next.as_deref();
+            &n.data
+        })
+    }
+}
+
+pub struct LinkedListIterMut<'a, T> {
+    current: Option<&'a mut Box<Node<T>>>,
+}
+
+impl<'a, T> Iterator for LinkedListIterMut<'a, T> {
+    type Item = &'a mut T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current.take().map(|n| {
+            self.current = n.next.as_mut();
+            &mut n.data
+        })
     }
 }
 
@@ -453,5 +505,52 @@ mod test {
         assert_eq!(list.len(), 0);
         assert_eq!(list.pop_back(), None);
         assert_eq!(list.pop_front(), None);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut iter = list.into_iter();
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        let mut iter = list.iter_mut();
+        assert_eq!(iter.next(), Some(&mut 1));
+        assert_eq!(iter.next(), Some(&mut 2));
+        assert_eq!(iter.next(), Some(&mut 3));
+        assert_eq!(iter.next(), None);
+
+        let mut iter = list.iter_mut();
+        assert_eq!(iter.next(), Some(&mut 1));
+        *iter.next().unwrap() = 4;
+
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&4));
     }
 }
